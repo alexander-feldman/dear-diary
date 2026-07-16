@@ -6,8 +6,9 @@ import { LoginForm } from "./auth/login-form";
 export default async function Home() {
   if (hasSupabaseEnv()) {
     const supabase = await createClient();
-    const { data } = await supabase.auth.getUser();
-    if (data.user) redirect("/journal");
+    const { data, error } = await supabase.auth.getUser();
+    console.info("Auth route", { pathname: "/", hasUser: Boolean(data.user), redirectDestination: !error && data.user ? "/journal" : null });
+    if (!error && data.user) redirect("/journal");
   }
 
   return <LoginForm />;

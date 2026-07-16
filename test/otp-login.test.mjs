@@ -8,7 +8,18 @@ const form = readFileSync(new URL("../src/app/auth/login-form.tsx", import.meta.
 test("successful OTP request is the only path that advances to code entry", () => {
   assert.match(action, /success: true, requestId: crypto\.randomUUID\(\)/);
   assert.match(form, /if \(result\.success\) \{/);
-  assert.match(form, /\{codeRequested && <form action=\{verifyAction\}/);
+  assert.match(form, /\{codeRequested && <form onSubmit=\{verifyCode\}/);
+});
+
+test("OTP verification uses the browser client and persists a session before navigation", () => {
+  assert.match(form, /import \{ createClient \} from "@\/lib\/supabase\/browser"/);
+  assert.match(form, /const \{ data, error \} = await supabase\.auth\.verifyOtp/);
+  assert.match(form, /if \(error \|\| !data\.session\)/);
+  const sessionCheck = form.indexOf("if (error || !data.session)");
+  const replace = form.indexOf('router.replace("/journal")');
+  const refresh = form.indexOf("router.refresh()");
+  assert.ok(sessionCheck >= 0 && replace > sessionCheck && refresh > replace);
+  assert.doesNotMatch(form, /redirect\("\/journal"\)/);
 });
 
 test("429 and rate-limit error codes return the rate-limit message", () => {

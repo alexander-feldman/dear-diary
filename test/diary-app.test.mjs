@@ -5,7 +5,6 @@ import test from "node:test";
 const app = readFileSync(new URL("../src/app/diary-app.tsx", import.meta.url), "utf8");
 const page = readFileSync(new URL("../src/app/journal/page.tsx", import.meta.url), "utf8");
 const loginForm = readFileSync(new URL("../src/app/auth/login-form.tsx", import.meta.url), "utf8");
-const authActions = readFileSync(new URL("../src/app/actions/auth.ts", import.meta.url), "utf8");
 
 test("empty journal is accepted without fictional production data", () => {
   assert.match(app, /initialEntries = \[\]/);
@@ -47,13 +46,13 @@ test("starring is shared through the days row", () => {
 test("email OTP accepts a numeric token without assuming its length", () => {
   assert.match(loginForm, /name="token" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="\[0-9\]\*"/);
   assert.doesNotMatch(loginForm, /maxLength=|minLength=/);
-  assert.match(authActions, /const token = String\(formData\.get\("token"\)/);
-  assert.match(authActions, /verifyOtp\(\{ email, token, type: "email" \}\)/);
+  assert.match(loginForm, /const token = String\(formData\.get\("token"\)/);
+  assert.match(loginForm, /verifyOtp\(\{ email: email\.trim\(\)\.toLowerCase\(\), token, type: "email" \}\)/);
 });
 test("email OTP reports invalid, expired, and rate-limited errors", () => {
-  assert.match(authActions, /one-time code is invalid/);
-  assert.match(authActions, /one-time code has expired/);
-  assert.match(authActions, /Too many attempts/);
+  assert.match(loginForm, /one-time code is invalid/);
+  assert.match(loginForm, /one-time code has expired/);
+  assert.match(loginForm, /Too many attempts/);
 });
 test("optimistic concurrency detects conflicts and preserves local draft", () => {
   assert.match(app, /\.eq\("updated_at", version\)/);
