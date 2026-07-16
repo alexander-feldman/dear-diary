@@ -3,7 +3,31 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export type LoginState = { message?: string; error?: boolean };
+export type LoginState = { message?: string; error?: boolean; success?: boolean; requestId?: string };
+
+const GENERIC_OTP_MESSAGE = "If this email has access, a one-time login code has been sent.";
+const RATE_LIMIT_MESSAGE = "Too many sign-in attempts. Please wait a minute and try again.";
+
+type SafeAuthError = { status?: number; code?: string };
+
+function isRateLimitError(error: SafeAuthError) {
+  return error.status === 429 || /rate.?limit|too.?many/i.test(error.code ?? "");
+}
+
+function otpErrorState(error: SafeAuthError): LoginState {
+  // Do not log the email or provider message because either can contain
+  // sensitive data. The provider's safe metadata is enough for diagnostics.
+  console.error("Supabase auth request failed", {
+    stage: "signInWithOtp",
+    status: error.status,
+    code: error.code,
+  });
+
+  return {
+    message: isRateLimitError(error) ? RATE_LIMIT_MESSAGE : GENERIC_OTP_MESSAGE,
+    error: true,
+  };
+}
 
 type AuthError = { code?: string; message: string; status?: number };
 
@@ -25,16 +49,18 @@ export async function requestEmailCode(_state: LoginState, formData: FormData): 
   if (!email) return { message: "Enter your email address." };
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { shouldCreateUser: false },
-  });
-
-  if (error && (error.status === 429 || error.code?.includes("rate_limit"))) {
-    return { message: "Too many code requests. Please wait a moment before trying again.", error: true };
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false },
+    });
+    if (error) return otpErrorState(error as SafeAuthError);
+  } catch (error) {
+    const authError = error && typeof error === "object" ? error as SafeAuthError : {};
+    return otpErrorState(authError);
   }
 
-  return { message: "If this email has access, a one-time login code has been sent." };
+  return { message: GENERIC_OTP_MESSAGE, success: true, requestId: crypto.randomUUID() };
 }
 
 export async function verifyEmailCode(_state: LoginState, formData: FormData): Promise<LoginState> {
