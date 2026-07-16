@@ -42,6 +42,7 @@ Every application table has RLS enabled. Policies are membership-scoped and cont
 1. Create a Supabase project.
 2. Apply the migrations in order from `supabase/migrations`.
 3. In Supabase Auth, ensure email OTP/magic-link sign-in is enabled.
+   In the Magic Link / OTP email template, use `{{ .Token }}` for the numeric code, not `{{ .ConfirmationURL }}`.
 4. Create the two approved auth users manually in Supabase Auth, or with a one-time admin/server-side script. Do not enable arbitrary public signup for this app.
 5. Link the two authenticated users to one journal using placeholder values; do not commit real addresses:
    ```sh
