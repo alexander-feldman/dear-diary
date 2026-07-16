@@ -1,5 +1,8 @@
 declare module "@supabase/ssr" {
-  type QueryResult<T = unknown> = Promise<{ data: T; error: { message: string } | null }>;
+  type QueryResult<T = unknown> = Promise<{
+    data: T;
+    error: { message: string; code?: string; status?: number } | null;
+  }>;
   type SupabaseClient = {
     auth: {
       getUser(): QueryResult<{ user: { id: string } | null }>;
