@@ -1,0 +1,1661 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f4f0ea" />
+  <title>Dear Diary — Prototype</title>
+  <style>
+    :root {
+      --canvas: #f4f0ea;
+      --paper: #fffdf9;
+      --paper-soft: #faf7f2;
+      --ink: #292521;
+      --muted: #746c64;
+      --line: #ddd5cc;
+      --line-dark: #cfc5ba;
+      --tali-wash: #f5ebe8;
+      --tali-accent: #9c7075;
+      --alex-wash: #f7eee5;
+      --alex-accent: #b86b37;
+      --gold: #9b793f;
+      --shadow: 0 12px 38px rgba(46, 39, 33, 0.055);
+      --radius: 17px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-height: 100%;
+      background: var(--canvas);
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 7% 0%, rgba(255,255,255,.58), transparent 29rem),
+        linear-gradient(180deg, #f7f3ed 0%, var(--canvas) 100%);
+      font-family: "Avenir Next", "Helvetica Neue", -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button, input, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .app {
+      width: min(720px, 100%);
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: max(22px, env(safe-area-inset-top)) 16px
+        calc(82px + env(safe-area-inset-bottom));
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 3px 2px 21px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      color: #302a26;
+      font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+      font-size: clamp(29px, 8vw, 34px);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -.045em;
+      line-height: 1;
+    }
+
+    .brand p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: .025em;
+    }
+
+    .icon-button,
+    .date-button,
+    .star-button,
+    .calendar-nav-button {
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      background: rgba(255,253,249,.72);
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, transform .15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .icon-button:hover,
+    .date-button:hover:not(:disabled),
+    .star-button:hover,
+    .calendar-nav-button:hover:not(:disabled) {
+      background: var(--paper);
+      border-color: var(--line-dark);
+    }
+
+    .icon-button:active,
+    .date-button:active:not(:disabled),
+    .star-button:active,
+    .calendar-nav-button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      color: var(--muted);
+    }
+
+    .icon-button svg,
+    .date-button svg,
+    .star-button svg,
+    .calendar-nav-button svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    .card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+      box-shadow: var(--shadow);
+    }
+
+    .day-header {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,253,249,.92);
+    }
+
+    .context-back {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      margin: -2px 0 13px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .context-back.show { display: inline-flex; }
+    .context-back svg { width: 14px; height: 14px; stroke: currentColor; }
+
+    .day-heading-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .day-title {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .day-title h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 620;
+      letter-spacing: -.026em;
+      line-height: 1.3;
+    }
+
+    .day-title p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 11.5px;
+      letter-spacing: .012em;
+    }
+
+    .day-controls {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 6px;
+    }
+
+    .date-button,
+    .star-button {
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 10px;
+      color: #766e67;
+    }
+
+    .date-button:disabled {
+      opacity: .3;
+      cursor: default;
+    }
+
+    .star-button svg { fill: none; }
+    .star-button.is-starred {
+      color: var(--gold);
+      border-color: #d9c9ae;
+      background: #f7f0e4;
+    }
+    .star-button.is-starred svg { fill: currentColor; }
+
+    .entry {
+      position: relative;
+      padding: 19px 18px 18px;
+    }
+
+    .entry.tali {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.42), transparent 55%),
+        var(--tali-wash);
+      border-top: 2px solid rgba(156,112,117,.42);
+    }
+
+    .entry.alex {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.42), transparent 55%),
+        var(--alex-wash);
+      border-top: 1px solid var(--line);
+    }
+
+    .entry-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .person-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 12px;
+      font-weight: 680;
+      letter-spacing: .018em;
+    }
+
+    .animal-icon {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      overflow: visible;
+    }
+
+    .animal-icon.koala { color: var(--tali-accent); }
+    .animal-icon.bear { color: var(--alex-accent); }
+
+    .save-state {
+      flex: 0 0 auto;
+      color: var(--muted);
+      font-size: 10.5px;
+      letter-spacing: .015em;
+    }
+
+    textarea {
+      display: block;
+      width: 100%;
+      min-height: 126px;
+      padding: 0;
+      border: 0;
+      outline: 0;
+      resize: vertical;
+      background: transparent;
+      color: var(--ink);
+      font-size: 16px;
+      letter-spacing: -.004em;
+      line-height: 1.58;
+    }
+
+    textarea::placeholder { color: rgba(78,69,62,.43); }
+    textarea[readonly] { resize: none; cursor: default; caret-color: transparent; }
+
+    .entry-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+    }
+
+    .done-button,
+    .preview-action,
+    .missing-day,
+    .view-toggle button {
+      border: 1px solid rgba(90,77,66,.14);
+      background: rgba(255,255,255,.64);
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11.5px;
+      font-weight: 650;
+      letter-spacing: .018em;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .done-button {
+      padding: 8px 12px;
+      border-radius: 9px;
+    }
+
+    .done-button.is-done {
+      color: #5e675d;
+      background: rgba(98,112,94,.09);
+    }
+
+    .alex-entry { padding: 0; }
+
+    .partner-preview {
+      display: flex;
+      width: 100%;
+      min-height: 70px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .partner-preview-copy {
+      display: grid;
+      min-width: 0;
+      gap: 3px;
+    }
+
+    .partner-status {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 11.5px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .preview-action {
+      flex: 0 0 auto;
+      padding: 7px 10px;
+      border-radius: 9px;
+    }
+
+    .alex-details {
+      padding: 0 18px 18px;
+      border-top: 1px solid rgba(120,91,67,.1);
+    }
+
+    .alex-entry.collapsed .alex-details { display: none; }
+    .alex-entry:not(.collapsed) .partner-status { display: none; }
+    .alex-entry:not(.collapsed) .partner-preview { min-height: 58px; padding-bottom: 12px; }
+
+    .recorded-message {
+      display: none;
+      padding: 12px 18px;
+      border-top: 1px solid var(--line);
+      background: var(--paper-soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: .025em;
+      text-align: center;
+    }
+
+    .recorded-message.show { display: block; }
+
+    .support-card {
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,253,249,.76);
+    }
+
+    .support-card h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 670;
+      letter-spacing: -.01em;
+    }
+
+    .support-card > p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11.5px;
+      line-height: 1.45;
+    }
+
+    .missing-card { display: none; }
+    .missing-card.show { display: block; }
+
+    .missing-days {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .missing-day {
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: var(--paper);
+    }
+
+    .memory-date {
+      margin-top: 13px;
+      padding-top: 13px;
+      border-top: 1px solid var(--line);
+      cursor: pointer;
+    }
+
+    .memory-date-title {
+      font-size: 12.5px;
+      font-weight: 680;
+    }
+
+    .memory-badge {
+      display: inline-flex;
+      margin-top: 7px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #efeae3;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 680;
+    }
+
+    .memory-entries {
+      display: grid;
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .memory-entry {
+      padding: 11px 12px;
+      border-radius: 11px;
+      font-size: 12.5px;
+      line-height: 1.48;
+    }
+
+    .memory-entry.tali-memory { background: var(--tali-wash); border-left: 3px solid var(--tali-accent); }
+    .memory-entry.alex-memory { background: var(--alex-wash); border-left: 3px solid var(--alex-accent); }
+
+    .memory-entry .person-label {
+      display: flex;
+      margin-bottom: 5px;
+      font-size: 10.5px;
+    }
+
+    .prototype-note {
+      margin: 13px 4px 0;
+      color: #8b8279;
+      font-size: 10px;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .panel-toolbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -.025em;
+    }
+
+    .panel-count {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .view-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      flex: 0 0 auto;
+      padding: 3px;
+      border-radius: 10px;
+      background: #efebe5;
+    }
+
+    .view-toggle button {
+      padding: 6px 9px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+    }
+
+    .view-toggle button.active {
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 1px 5px rgba(43,36,30,.07);
+    }
+
+    .feed-view.hidden,
+    .calendar-view { display: none; }
+    .calendar-view.active { display: block; }
+
+    .feed-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .feed-item {
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255,253,249,.8);
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .feed-item:hover { border-color: var(--line-dark); background: var(--paper); }
+
+    .feed-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    .feed-date {
+      font-size: 12.5px;
+      font-weight: 680;
+      letter-spacing: -.008em;
+    }
+
+    .feed-star {
+      display: grid;
+      width: 25px;
+      height: 25px;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #9b9187;
+      cursor: pointer;
+    }
+
+    .feed-star svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linejoin: round;
+    }
+
+    .feed-star.is-starred { color: var(--gold); }
+    .feed-star.is-starred svg { fill: currentColor; }
+
+    .snippet-list { display: grid; gap: 6px; }
+
+    .snippet-row {
+      display: grid;
+      grid-template-columns: 71px minmax(0, 1fr);
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .snippet-row .person-label {
+      gap: 5px;
+      color: var(--muted);
+      font-size: 10.5px;
+      font-weight: 650;
+    }
+
+    .snippet-row .animal-icon {
+      width: 16px;
+      height: 16px;
+      flex-basis: 16px;
+    }
+
+    .snippet-text {
+      overflow: hidden;
+      min-width: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty-state {
+      padding: 12px 1px 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 2px 0 14px;
+    }
+
+    .calendar-title {
+      font-size: 13px;
+      font-weight: 680;
+    }
+
+    .calendar-controls { display: flex; gap: 6px; }
+
+    .calendar-nav-button {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 9px;
+      color: var(--muted);
+    }
+
+    .calendar-nav-button:disabled { opacity: .3; cursor: default; }
+
+    .calendar-weekdays,
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .calendar-weekdays { margin-bottom: 5px; }
+
+    .calendar-weekdays span {
+      padding: 4px 0;
+      color: var(--muted);
+      font-size: 9.5px;
+      font-weight: 680;
+      text-align: center;
+    }
+
+    .calendar-grid { gap: 3px; }
+
+    .calendar-day {
+      position: relative;
+      min-height: 46px;
+      padding: 0;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 11.5px;
+    }
+
+    .calendar-day:hover:not(:disabled) { background: #f2eee8; }
+    .calendar-day.today { box-shadow: inset 0 0 0 1px var(--line-dark); }
+    .calendar-day:disabled { opacity: .23; cursor: default; }
+    .calendar-day.blank { visibility: hidden; }
+
+    .calendar-dots {
+      display: flex;
+      min-height: 5px;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      margin-top: 4px;
+    }
+
+    .calendar-dot { width: 4px; height: 4px; border-radius: 50%; }
+    .calendar-dot.tali-dot { background: var(--tali-accent); }
+    .calendar-dot.alex-dot { background: var(--alex-accent); }
+
+    .calendar-day.is-starred::after {
+      content: "";
+      position: absolute;
+      top: 5px;
+      right: 7px;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--gold);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      outline: 0;
+      background: rgba(255,253,249,.86);
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .search-input:focus { border-color: #bdb2a7; }
+
+    .stat-card {
+      margin-top: 12px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: rgba(255,253,249,.72);
+    }
+
+    .stat-card strong {
+      display: block;
+      font-family: Georgia, "Iowan Old Style", serif;
+      font-size: 22px;
+      font-weight: 500;
+    }
+
+    .stat-card span { color: var(--muted); font-size: 10.5px; }
+
+    .results-heading {
+      margin: 20px 0 9px;
+      font-size: 13px;
+      font-weight: 670;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      z-index: 20;
+      left: 50%;
+      bottom: max(11px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      width: min(688px, calc(100% - 24px));
+      padding: 4px;
+      transform: translateX(-50%);
+      border: 1px solid rgba(213,205,196,.94);
+      border-radius: 14px;
+      background: rgba(255,253,249,.93);
+      box-shadow: 0 10px 30px rgba(44,37,31,.1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .nav-button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 590;
+      letter-spacing: .015em;
+    }
+
+    .nav-button.active {
+      background: #f0ebe4;
+      color: var(--ink);
+      font-weight: 680;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 40;
+      left: 50%;
+      bottom: 76px;
+      padding: 9px 13px;
+      transform: translateX(-50%) translateY(10px);
+      border-radius: 999px;
+      background: #332d28;
+      color: white;
+      font-size: 11px;
+      opacity: 0;
+      pointer-events: none;
+      transition: .18s ease;
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    dialog {
+      width: min(410px, calc(100% - 30px));
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--paper);
+      box-shadow: 0 25px 70px rgba(50,40,30,.25);
+    }
+
+    dialog::backdrop { background: rgba(45,39,34,.34); backdrop-filter: blur(3px); }
+
+    .dialog-inner { padding: 20px; }
+    .dialog-inner h3 { margin: 0 0 7px; font-size: 17px; }
+    .dialog-inner p { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+
+    .date-input {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--paper);
+    }
+
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+    .dialog-button {
+      padding: 9px 13px;
+      border: 0;
+      border-radius: 9px;
+      background: #eee9e2;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .dialog-button.primary { background: #342e29; color: white; }
+
+    @media (max-width: 390px) {
+      .day-header { padding: 16px 14px; }
+      .day-heading-row { gap: 9px; }
+      .day-title h2 { font-size: 16px; }
+      .day-controls { gap: 4px; }
+      .date-button, .star-button { width: 32px; height: 32px; }
+      .entry { padding-left: 15px; padding-right: 15px; }
+      .partner-preview { padding-left: 15px; padding-right: 15px; }
+      .alex-details { padding-left: 15px; padding-right: 15px; }
+      .panel { padding: 15px; }
+      .snippet-row { grid-template-columns: 65px minmax(0,1fr); }
+    }
+
+    @media (min-width: 700px) {
+      .app { padding-left: 24px; padding-right: 24px; }
+      textarea { min-height: 175px; font-size: 15px; }
+      .panel { padding: 20px; }
+      .feed-item { padding: 12px 14px; }
+      .snippet-row { font-size: 11.5px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="app-header">
+      <div class="brand">
+        <h1>Dear Diary</h1>
+        <p>A private daily journal for Tali &amp; Alex</p>
+      </div>
+      <button class="icon-button" id="jumpButton" type="button" aria-label="Jump to a date">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+    </header>
+
+    <section class="section active" id="writeSection">
+      <article class="card">
+        <div class="day-header">
+          <button class="context-back" id="backButton" type="button">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+            <span id="backLabel">Back</span>
+          </button>
+
+          <div class="day-heading-row">
+            <div class="day-title">
+              <h2 id="dateTitle"></h2>
+              <p id="dateSubtitle">Writing for today</p>
+            </div>
+
+            <div class="day-controls">
+              <button class="star-button" id="dayStarButton" type="button" aria-label="Star this day" aria-pressed="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.65 5.37 5.93.86-4.29 4.18 1.01 5.91L12 17.03 6.7 19.82l1.01-5.91-4.29-4.18 5.93-.86L12 3.5z" /></svg>
+              </button>
+              <button class="date-button" id="prevDay" type="button" aria-label="Previous day">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+              </button>
+              <button class="date-button" id="nextDay" type="button" aria-label="Next day">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <section class="entry tali">
+          <div class="entry-heading">
+            <span class="person-label" id="taliLabel"></span>
+            <span class="save-state" id="taliStatus">Saved</span>
+          </div>
+          <textarea id="taliEntry" placeholder="How was today?" autocapitalize="sentences" spellcheck="true"></textarea>
+          <div class="entry-footer">
+            <button class="done-button" id="taliDone" type="button">Done</button>
+          </div>
+        </section>
+
+        <section class="entry alex alex-entry collapsed" id="alexPanel">
+          <button class="partner-preview" id="alexPreview" type="button" aria-expanded="false">
+            <span class="partner-preview-copy">
+              <span class="person-label" id="alexPreviewLabel"></span>
+              <span class="partner-status" id="alexPreviewStatus">Alex hasn’t written yet</span>
+            </span>
+            <span class="preview-action" id="alexPreviewAction">Open</span>
+          </button>
+
+          <div class="alex-details">
+            <textarea id="alexEntry" placeholder="Alex hasn’t written yet" readonly tabindex="-1" aria-label="Alex’s entry, read only"></textarea>
+          </div>
+        </section>
+
+        <div class="recorded-message" id="recordedMessage">Today is recorded.</div>
+      </article>
+
+      <article class="support-card missing-card" id="missingCard">
+        <h3 id="missingTitle">Recent blank days</h3>
+        <p>Only blank days from the past week appear here.</p>
+        <div class="missing-days" id="missingDays"></div>
+      </article>
+
+      <article class="support-card" id="memoryCard" hidden>
+        <h3>On this day</h3>
+        <p>From this date in an earlier year.</p>
+        <div class="memory-date" id="memoryDate"></div>
+      </article>
+
+      <p class="prototype-note">Prototype · Tali’s view · Sample entries are stored only in this browser.</p>
+    </section>
+
+    <section class="section" id="daysSection">
+      <article class="card panel">
+        <div class="panel-toolbar">
+          <div>
+            <h2 class="panel-title">Days</h2>
+            <span class="panel-count" id="dayCount"></span>
+          </div>
+          <div class="view-toggle" aria-label="Days view">
+            <button class="active" id="feedViewButton" type="button">Feed</button>
+            <button id="calendarViewButton" type="button">Calendar</button>
+          </div>
+        </div>
+
+        <div class="feed-view" id="feedView">
+          <div class="feed-list" id="feedList"></div>
+        </div>
+
+        <div class="calendar-view" id="calendarView">
+          <div class="calendar-header">
+            <span class="calendar-title" id="calendarTitle"></span>
+            <div class="calendar-controls">
+              <button class="calendar-nav-button" id="previousMonth" type="button" aria-label="Previous month">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+              </button>
+              <button class="calendar-nav-button" id="nextMonth" type="button" aria-label="Next month">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section" id="lookBackSection">
+      <article class="card panel">
+        <div class="panel-toolbar">
+          <h2 class="panel-title">Search &amp; starred</h2>
+        </div>
+        <input class="search-input" id="searchInput" type="search" placeholder="Search your days…" />
+        <div class="stat-card" id="statCard"></div>
+        <h3 class="results-heading" id="resultsHeading">Starred days</h3>
+        <div class="feed-list" id="searchResults"></div>
+      </article>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Main navigation">
+    <button class="nav-button active" data-section="writeSection" type="button">Today</button>
+    <button class="nav-button" data-section="daysSection" type="button">Days</button>
+    <button class="nav-button" data-section="lookBackSection" type="button">Look back</button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <dialog id="dateDialog">
+    <div class="dialog-inner">
+      <h3>Jump to a day</h3>
+      <p>Choose any past date to read or add an entry.</p>
+      <input class="date-input" type="date" id="datePicker" />
+      <div class="dialog-actions">
+        <button class="dialog-button" id="cancelDate" type="button">Cancel</button>
+        <button class="dialog-button primary" id="goDate" type="button">Go</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "dear-diary-final-prototype-v1";
+    const todayKey = () => localDateKey(new Date());
+
+    const state = loadState();
+    seedSampleData();
+
+    let currentDate = todayKey();
+    let calendarMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
+    let daysView = "feed";
+    let returnContext = null;
+    let alexExpanded = false;
+    const saveTimers = {};
+
+    const els = {
+      dateTitle: document.getElementById("dateTitle"),
+      dateSubtitle: document.getElementById("dateSubtitle"),
+      backButton: document.getElementById("backButton"),
+      backLabel: document.getElementById("backLabel"),
+      dayStarButton: document.getElementById("dayStarButton"),
+      taliLabel: document.getElementById("taliLabel"),
+      taliEntry: document.getElementById("taliEntry"),
+      taliStatus: document.getElementById("taliStatus"),
+      taliDone: document.getElementById("taliDone"),
+      alexPanel: document.getElementById("alexPanel"),
+      alexPreview: document.getElementById("alexPreview"),
+      alexPreviewLabel: document.getElementById("alexPreviewLabel"),
+      alexPreviewStatus: document.getElementById("alexPreviewStatus"),
+      alexPreviewAction: document.getElementById("alexPreviewAction"),
+      alexEntry: document.getElementById("alexEntry"),
+      recordedMessage: document.getElementById("recordedMessage"),
+      missingCard: document.getElementById("missingCard"),
+      missingTitle: document.getElementById("missingTitle"),
+      missingDays: document.getElementById("missingDays"),
+      memoryCard: document.getElementById("memoryCard"),
+      memoryDate: document.getElementById("memoryDate"),
+      dayCount: document.getElementById("dayCount"),
+      feedView: document.getElementById("feedView"),
+      calendarView: document.getElementById("calendarView"),
+      feedViewButton: document.getElementById("feedViewButton"),
+      calendarViewButton: document.getElementById("calendarViewButton"),
+      feedList: document.getElementById("feedList"),
+      calendarTitle: document.getElementById("calendarTitle"),
+      calendarGrid: document.getElementById("calendarGrid"),
+      searchInput: document.getElementById("searchInput"),
+      statCard: document.getElementById("statCard"),
+      resultsHeading: document.getElementById("resultsHeading"),
+      searchResults: document.getElementById("searchResults"),
+      toast: document.getElementById("toast"),
+      dateDialog: document.getElementById("dateDialog"),
+      datePicker: document.getElementById("datePicker")
+    };
+
+    els.taliLabel.innerHTML = personLabelMarkup("tali", "Tali");
+    els.alexPreviewLabel.innerHTML = personLabelMarkup("alex", "Alex");
+
+    function loadState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        return {
+          entries: parsed.entries || {},
+          stars: parsed.stars || {},
+          completed: parsed.completed || {},
+          sampleSeeded: Boolean(parsed.sampleSeeded)
+        };
+      } catch {
+        return { entries: {}, stars: {}, completed: {}, sampleSeeded: false };
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function localDateKey(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function dateFromKey(key) {
+      const [year, month, day] = key.split("-").map(Number);
+      return new Date(year, month - 1, day, 12, 0, 0);
+    }
+
+    function offsetDate(key, amount) {
+      const date = dateFromKey(key);
+      date.setDate(date.getDate() + amount);
+      return localDateKey(date);
+    }
+
+    function formatLong(key) {
+      const date = dateFromKey(key);
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric"
+      }).format(date);
+    }
+
+    function formatMissing(key) {
+      return new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric"
+      }).format(dateFromKey(key));
+    }
+
+    function getEntry(key) {
+      if (!state.entries[key]) state.entries[key] = { tali: "", alex: "" };
+      return state.entries[key];
+    }
+
+    function isEmptyDay(key) {
+      const entry = state.entries[key];
+      return !entry || (!entry.tali.trim() && !entry.alex.trim());
+    }
+
+    function allRecordedDates() {
+      return Object.keys(state.entries)
+        .filter(key => !isEmptyDay(key))
+        .sort((a, b) => b.localeCompare(a));
+    }
+
+    function sampleDateKey(daysAgo) {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() - daysAgo);
+      return localDateKey(date);
+    }
+
+    function seedSampleData() {
+      if (state.sampleSeeded) return;
+
+      const samples = [
+        [1, "We took the long way home through the park and the light was so pretty. I was tired all afternoon, but dinner together reset the whole day.", "Good slow evening. The walk was my favorite part, especially when we stopped to look at that extremely serious little dog."],
+        [2, "Busy workday, then we made a giant salad with everything left in the fridge. Somehow it was actually excellent.", "A very normal day in a comforting way. I liked cooking together and listening to the same song three times."],
+        [3, "Coffee, errands, and a long phone call with my mom. I felt scattered this morning and much calmer by bedtime.", "I got more done than I expected. We sat on the couch after dinner and talked about the party, which made it all feel real."],
+        [5, "We went to the farmers market and bought too many peaches. Perfect weather, excellent snacks, no notes ☀️", "One of those days where the city felt especially nice. The peaches are not going to last until Wednesday."],
+        [6, "A little grumpy and overwhelmed today, but the evening was soft. Glad we still wrote even though neither of us had much to say.", "Long day. I appreciated the quiet night and going to bed early."],
+        [8, "Dinner with friends and a very funny conversation on the walk back. I want to remember how warm the night felt.", "Really fun dinner. I laughed so hard on the way home that my face hurt."],
+        [10, "We started planning our summer trip and immediately opened about forty tabs. Excited, if not organized.", "Trip planning night. Strong opinions about trains, weaker opinions about where we are actually sleeping."]
+      ];
+
+      samples.forEach(([offset, tali, alex]) => {
+        const key = sampleDateKey(offset);
+        state.entries[key] = { tali, alex };
+        state.completed[`${key}:tali`] = true;
+        state.completed[`${key}:alex`] = true;
+      });
+
+      const today = todayKey();
+      state.entries[today] = {
+        tali: "",
+        alex: "I’m glad we kept the evening simple. Dinner was good, and I liked sitting together while we each did our own thing."
+      };
+      state.completed[`${today}:alex`] = true;
+
+      const lastYear = new Date();
+      lastYear.setFullYear(lastYear.getFullYear() - 1);
+      lastYear.setHours(12, 0, 0, 0);
+      const memoryKey = localDateKey(lastYear);
+      state.entries[memoryKey] = {
+        tali: "A really sweet ordinary day. We got sandwiches, sat outside for a long time, and talked about what the next year might look like.",
+        alex: "I remember feeling very lucky today. Nothing huge happened, but I didn’t want the afternoon to end."
+      };
+      state.completed[`${memoryKey}:tali`] = true;
+      state.completed[`${memoryKey}:alex`] = true;
+      state.stars[memoryKey] = true;
+      state.stars[sampleDateKey(5)] = true;
+      state.sampleSeeded = true;
+      persist();
+    }
+
+    function animalIcon(person) {
+      if (person === "tali") {
+        return `<svg class="animal-icon koala" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="7.1" cy="13" r="5" fill="#e6ddd6" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="24.9" cy="13" r="5" fill="#e6ddd6" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M8.6 17.1c0-6.1 3.2-10.2 7.4-10.2s7.4 4.1 7.4 10.2v.8c0 4.7-3.1 7.8-7.4 7.8s-7.4-3.1-7.4-7.8z" fill="#fffaf5" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="13" cy="16" r="1" fill="currentColor"/><circle cx="19" cy="16" r="1" fill="currentColor"/>
+          <ellipse cx="16" cy="19.1" rx="2.35" ry="2.8" fill="currentColor"/>
+          <path d="M14.6 22.2c.7.55 2.1.55 2.8 0" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>`;
+      }
+
+      return `<svg class="animal-icon bear" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="9" cy="9.4" r="3.7" fill="#ead4c3" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="23" cy="9.4" r="3.7" fill="#ead4c3" stroke="currentColor" stroke-width="1.4"/>
+        <path d="M7.7 16.5c0-6 3.4-10 8.3-10s8.3 4 8.3 10v1.8c0 4.7-3.5 7.7-8.3 7.7s-8.3-3-8.3-7.7z" fill="#fff8f1" stroke="currentColor" stroke-width="1.4"/>
+        <circle cx="12.7" cy="15.7" r="1" fill="currentColor"/><circle cx="19.3" cy="15.7" r="1" fill="currentColor"/>
+        <ellipse cx="16" cy="20" rx="4" ry="3.2" fill="#f1dfd1" stroke="currentColor" stroke-width="1"/>
+        <ellipse cx="16" cy="18.9" rx="1.7" ry="1.35" fill="currentColor"/>
+        <path d="M16 20.1v1.2m-1.5.5c.8.65 2.2.65 3 0" fill="none" stroke="currentColor" stroke-width="1.05" stroke-linecap="round"/>
+      </svg>`;
+    }
+
+    function personLabelMarkup(person, label) {
+      return `${animalIcon(person)}<span>${escapeHtml(label)}</span>`;
+    }
+
+    function starIconMarkup() {
+      return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.65 5.37 5.93.86-4.29 4.18 1.01 5.91L12 17.03 6.7 19.82l1.01-5.91-4.29-4.18 5.93-.86L12 3.5z" /></svg>`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function setSaveState(text) {
+      els.taliStatus.textContent = text;
+    }
+
+    function saveTaliEntry(text) {
+      setSaveState("Saving…");
+      clearTimeout(saveTimers.tali);
+      saveTimers.tali = setTimeout(() => {
+        getEntry(currentDate).tali = text;
+        persist();
+        setSaveState(navigator.onLine ? "Saved" : "Saved on this phone");
+        renderAllSecondaryViews();
+      }, 320);
+    }
+
+    function renderCurrentDate() {
+      const entry = getEntry(currentDate);
+      const today = todayKey();
+      const yesterday = offsetDate(today, -1);
+      const isPast = currentDate < today;
+
+      els.dateTitle.textContent = formatLong(currentDate);
+      els.dateSubtitle.textContent = currentDate === today
+        ? "Writing for today"
+        : currentDate === yesterday
+          ? "Writing for yesterday"
+          : "Writing for this day";
+
+      els.taliEntry.value = entry.tali || "";
+      els.alexEntry.value = entry.alex || "";
+      setSaveState("Saved");
+
+      const taliDone = Boolean(state.completed[`${currentDate}:tali`]);
+      const alexDone = Boolean(state.completed[`${currentDate}:alex`]);
+      els.taliDone.classList.toggle("is-done", taliDone);
+      els.taliDone.textContent = taliDone ? "Done ✓" : "Done";
+
+      const alexHasWritten = Boolean((entry.alex || "").trim());
+      els.alexPreviewStatus.textContent = alexHasWritten ? "Alex wrote today" : "Alex hasn’t written yet";
+
+      if (isPast) alexExpanded = true;
+      els.alexPanel.classList.toggle("collapsed", !alexExpanded);
+      els.alexPreview.setAttribute("aria-expanded", String(alexExpanded));
+      els.alexPreviewAction.textContent = alexExpanded ? "Hide" : (alexHasWritten ? "Read" : "Open");
+
+      const isStarred = Boolean(state.stars[currentDate]);
+      els.dayStarButton.classList.toggle("is-starred", isStarred);
+      els.dayStarButton.setAttribute("aria-pressed", String(isStarred));
+      els.dayStarButton.setAttribute("aria-label", isStarred ? "Remove star from this day" : "Star this day");
+
+      const bothDone = taliDone && alexDone;
+      els.recordedMessage.textContent = currentDate === today ? "Today is recorded." : "This day is recorded.";
+      els.recordedMessage.classList.toggle("show", bothDone);
+
+      document.getElementById("nextDay").disabled = currentDate >= today;
+
+      if (returnContext) {
+        els.backButton.classList.add("show");
+        els.backLabel.textContent = returnContext.label;
+      } else {
+        els.backButton.classList.remove("show");
+      }
+
+      renderMissingDays();
+      renderMemory();
+    }
+
+    function renderMissingDays() {
+      const missing = [];
+      const today = todayKey();
+
+      for (let daysAgo = 1; daysAgo <= 7; daysAgo += 1) {
+        const key = offsetDate(today, -daysAgo);
+        if (isEmptyDay(key)) missing.push(key);
+      }
+
+      const show = currentDate === today && missing.length > 0;
+      els.missingCard.classList.toggle("show", show);
+      if (!show) {
+        els.missingDays.innerHTML = "";
+        return;
+      }
+
+      els.missingTitle.textContent = missing.length === 1 ? "1 recent blank day" : `${missing.length} recent blank days`;
+      els.missingDays.innerHTML = missing.map(key => `
+        <button class="missing-day" type="button" data-missing-date="${key}">${escapeHtml(formatMissing(key))}</button>
+      `).join("");
+    }
+
+    function renderMemory() {
+      const current = dateFromKey(currentDate);
+      const candidates = allRecordedDates().filter(key => {
+        const date = dateFromKey(key);
+        return date.getMonth() === current.getMonth()
+          && date.getDate() === current.getDate()
+          && date.getFullYear() < current.getFullYear();
+      });
+
+      if (!candidates.length) {
+        els.memoryCard.hidden = true;
+        return;
+      }
+
+      const key = candidates[0];
+      const entry = getEntry(key);
+      const yearsAgo = current.getFullYear() - dateFromKey(key).getFullYear();
+      els.memoryDate.dataset.date = key;
+      els.memoryDate.innerHTML = `
+        <div class="memory-date-title">${escapeHtml(formatLong(key))}</div>
+        <span class="memory-badge">${yearsAgo} ${yearsAgo === 1 ? "year" : "years"} ago</span>
+        <div class="memory-entries">
+          ${entry.tali ? `<div class="memory-entry tali-memory"><span class="person-label">${personLabelMarkup("tali", "Tali")}</span>${escapeHtml(entry.tali)}</div>` : ""}
+          ${entry.alex ? `<div class="memory-entry alex-memory"><span class="person-label">${personLabelMarkup("alex", "Alex")}</span>${escapeHtml(entry.alex)}</div>` : ""}
+        </div>`;
+      els.memoryCard.hidden = false;
+    }
+
+    function renderFeed() {
+      const dates = allRecordedDates();
+      els.dayCount.textContent = `${dates.length} ${dates.length === 1 ? "day" : "days"}`;
+      els.feedList.innerHTML = dates.length
+        ? dates.map(feedItemMarkup).join("")
+        : `<div class="empty-state">Your written days will appear here.</div>`;
+    }
+
+    function feedItemMarkup(key) {
+      const entry = getEntry(key);
+      const starred = Boolean(state.stars[key]);
+      return `
+        <article class="feed-item" data-date="${key}">
+          <div class="feed-item-header">
+            <div class="feed-date">${escapeHtml(formatLong(key))}</div>
+            <button class="feed-star ${starred ? "is-starred" : ""}" type="button" data-star="${key}" aria-label="${starred ? "Remove star" : "Star this day"}">
+              ${starIconMarkup()}
+            </button>
+          </div>
+          <div class="snippet-list">
+            <div class="snippet-row">
+              <span class="person-label">${personLabelMarkup("tali", "Tali")}</span>
+              <span class="snippet-text">${escapeHtml(entry.tali || "—")}</span>
+            </div>
+            <div class="snippet-row">
+              <span class="person-label">${personLabelMarkup("alex", "Alex")}</span>
+              <span class="snippet-text">${escapeHtml(entry.alex || "—")}</span>
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function renderCalendar() {
+      const year = calendarMonth.getFullYear();
+      const month = calendarMonth.getMonth();
+      const firstWeekday = new Date(year, month, 1, 12).getDay();
+      const daysInMonth = new Date(year, month + 1, 0, 12).getDate();
+      const today = todayKey();
+
+      els.calendarTitle.textContent = new Intl.DateTimeFormat(undefined, {
+        month: "long",
+        year: "numeric"
+      }).format(calendarMonth);
+
+      const cells = [];
+      for (let index = 0; index < firstWeekday; index += 1) {
+        cells.push(`<span class="calendar-day blank" aria-hidden="true"></span>`);
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const key = localDateKey(new Date(year, month, day, 12));
+        const entry = state.entries[key] || { tali: "", alex: "" };
+        const future = key > today;
+        const classes = [
+          "calendar-day",
+          key === today ? "today" : "",
+          state.stars[key] ? "is-starred" : ""
+        ].filter(Boolean).join(" ");
+
+        cells.push(`
+          <button class="${classes}" type="button" data-calendar-date="${key}" ${future ? "disabled" : ""}>
+            <span>${day}</span>
+            <span class="calendar-dots">
+              ${entry.tali.trim() ? `<span class="calendar-dot tali-dot"></span>` : ""}
+              ${entry.alex.trim() ? `<span class="calendar-dot alex-dot"></span>` : ""}
+            </span>
+          </button>`);
+      }
+
+      els.calendarGrid.innerHTML = cells.join("");
+      const nextMonth = new Date(year, month + 1, 1, 12);
+      const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12);
+      document.getElementById("nextMonth").disabled = nextMonth > thisMonth;
+    }
+
+    function renderSearch() {
+      const query = els.searchInput.value.trim().toLowerCase();
+      els.resultsHeading.textContent = query ? "Search results" : "Starred days";
+
+      const dates = allRecordedDates().filter(key => {
+        if (!query) return Boolean(state.stars[key]);
+        const entry = getEntry(key);
+        return `${entry.tali} ${entry.alex} ${formatLong(key)}`.toLowerCase().includes(query);
+      });
+
+      els.searchResults.innerHTML = dates.length
+        ? dates.map(feedItemMarkup).join("")
+        : `<div class="empty-state">${query ? "No matching days." : "Star a day to keep it close."}</div>`;
+    }
+
+    function renderStats() {
+      const count = allRecordedDates().length;
+      els.statCard.innerHTML = `<strong>${count}</strong><span>days recorded</span>`;
+    }
+
+    function renderAllSecondaryViews() {
+      renderFeed();
+      renderCalendar();
+      renderSearch();
+      renderStats();
+      renderMemory();
+      renderMissingDays();
+    }
+
+    function toggleDone() {
+      const key = `${currentDate}:tali`;
+      state.completed[key] = !state.completed[key];
+      if (state.completed[key]) alexExpanded = true;
+      persist();
+      renderCurrentDate();
+      showToast(state.completed[key] ? "Done — Alex’s entry is open" : "You can keep editing");
+    }
+
+    function toggleCurrentStar() {
+      state.stars[currentDate] = !state.stars[currentDate];
+      persist();
+      renderCurrentDate();
+      renderAllSecondaryViews();
+      showToast(state.stars[currentDate] ? "Day starred" : "Star removed");
+    }
+
+    function toggleStar(key) {
+      state.stars[key] = !state.stars[key];
+      persist();
+      renderAllSecondaryViews();
+    }
+
+    function activeSectionId() {
+      return document.querySelector(".section.active")?.id || "writeSection";
+    }
+
+    function captureReturnContext() {
+      if (returnContext) return;
+      const sectionId = activeSectionId();
+
+      if (sectionId === "daysSection") {
+        returnContext = {
+          sectionId,
+          daysView,
+          calendarMonth: calendarMonth.toISOString(),
+          label: daysView === "calendar" ? "Calendar" : "Days"
+        };
+      } else if (sectionId === "lookBackSection") {
+        returnContext = { sectionId, label: "Look back" };
+      } else {
+        returnContext = {
+          sectionId: "writeSection",
+          dateKey: currentDate,
+          label: currentDate === todayKey() ? "Today" : "Back"
+        };
+      }
+    }
+
+    function openDate(key) {
+      captureReturnContext();
+      currentDate = key;
+      alexExpanded = key < todayKey() || Boolean(state.completed[`${key}:tali`]);
+      switchSection("writeSection");
+      renderCurrentDate();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function goBack() {
+      if (!returnContext) return;
+      const context = returnContext;
+      returnContext = null;
+
+      if (context.sectionId === "daysSection") {
+        if (context.calendarMonth) calendarMonth = new Date(context.calendarMonth);
+        switchSection("daysSection");
+        setDaysView(context.daysView || "feed");
+      } else if (context.sectionId === "lookBackSection") {
+        switchSection("lookBackSection");
+      } else {
+        currentDate = context.dateKey || todayKey();
+        alexExpanded = Boolean(state.completed[`${currentDate}:tali`]);
+        switchSection("writeSection");
+        renderCurrentDate();
+      }
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function switchSection(sectionId) {
+      document.querySelectorAll(".section").forEach(section => {
+        section.classList.toggle("active", section.id === sectionId);
+      });
+      document.querySelectorAll(".nav-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.section === sectionId);
+      });
+
+      if (sectionId === "daysSection") {
+        renderFeed();
+        renderCalendar();
+      }
+      if (sectionId === "lookBackSection") {
+        renderStats();
+        renderSearch();
+      }
+    }
+
+    function setDaysView(view) {
+      daysView = view;
+      const calendar = view === "calendar";
+      els.feedView.classList.toggle("hidden", calendar);
+      els.calendarView.classList.toggle("active", calendar);
+      els.feedViewButton.classList.toggle("active", !calendar);
+      els.calendarViewButton.classList.toggle("active", calendar);
+      if (calendar) renderCalendar();
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 1500);
+    }
+
+    function handleFeedClick(event) {
+      const star = event.target.closest("[data-star]");
+      if (star) {
+        event.stopPropagation();
+        toggleStar(star.dataset.star);
+        return;
+      }
+      const item = event.target.closest("[data-date]");
+      if (item) openDate(item.dataset.date);
+    }
+
+    els.taliEntry.addEventListener("input", event => saveTaliEntry(event.target.value));
+    els.taliDone.addEventListener("click", toggleDone);
+    els.dayStarButton.addEventListener("click", toggleCurrentStar);
+    els.backButton.addEventListener("click", goBack);
+
+    els.alexPreview.addEventListener("click", () => {
+      alexExpanded = !alexExpanded;
+      renderCurrentDate();
+    });
+
+    document.getElementById("prevDay").addEventListener("click", () => {
+      currentDate = offsetDate(currentDate, -1);
+      alexExpanded = true;
+      renderCurrentDate();
+    });
+
+    document.getElementById("nextDay").addEventListener("click", () => {
+      if (currentDate < todayKey()) {
+        currentDate = offsetDate(currentDate, 1);
+        alexExpanded = currentDate < todayKey() || Boolean(state.completed[`${currentDate}:tali`]);
+        renderCurrentDate();
+      }
+    });
+
+    els.missingDays.addEventListener("click", event => {
+      const button = event.target.closest("[data-missing-date]");
+      if (button) openDate(button.dataset.missingDate);
+    });
+
+    els.memoryDate.addEventListener("click", () => {
+      if (els.memoryDate.dataset.date) openDate(els.memoryDate.dataset.date);
+    });
+
+    els.feedList.addEventListener("click", handleFeedClick);
+    els.searchResults.addEventListener("click", handleFeedClick);
+
+    els.feedViewButton.addEventListener("click", () => setDaysView("feed"));
+    els.calendarViewButton.addEventListener("click", () => setDaysView("calendar"));
+
+    document.getElementById("previousMonth").addEventListener("click", () => {
+      calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1, 12);
+      renderCalendar();
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1, 12);
+      renderCalendar();
+    });
+
+    els.calendarGrid.addEventListener("click", event => {
+      const button = event.target.closest("[data-calendar-date]");
+      if (button && !button.disabled) openDate(button.dataset.calendarDate);
+    });
+
+    els.searchInput.addEventListener("input", renderSearch);
+
+    document.querySelectorAll(".nav-button").forEach(button => {
+      button.addEventListener("click", () => {
+        returnContext = null;
+        const sectionId = button.dataset.section;
+        switchSection(sectionId);
+        if (sectionId === "writeSection") {
+          currentDate = todayKey();
+          alexExpanded = Boolean(state.completed[`${currentDate}:tali`]);
+          renderCurrentDate();
+        }
+      });
+    });
+
+    document.getElementById("jumpButton").addEventListener("click", () => {
+      els.datePicker.value = currentDate;
+      els.datePicker.max = todayKey();
+      els.dateDialog.showModal();
+    });
+
+    document.getElementById("cancelDate").addEventListener("click", () => els.dateDialog.close());
+    document.getElementById("goDate").addEventListener("click", () => {
+      if (els.datePicker.value) openDate(els.datePicker.value);
+      els.dateDialog.close();
+    });
+
+    window.addEventListener("online", () => setSaveState("Saved"));
+    window.addEventListener("offline", () => setSaveState("Saved on this phone"));
+
+    renderCurrentDate();
+    renderAllSecondaryViews();
+  </script>
+</body>
+</html>
