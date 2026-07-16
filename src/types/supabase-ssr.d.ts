@@ -7,7 +7,7 @@ declare module "@supabase/ssr" {
     auth: {
       getUser(): QueryResult<{ user: { id: string } | null }>;
       signInWithOtp(options: { email: string; options?: { shouldCreateUser?: boolean } }): QueryResult;
-      verifyOtp(options: { email: string; token: string; type: "email" }): QueryResult;
+      verifyOtp(options: { email: string; token: string; type: "email" }): QueryResult<{ session: object | null }>;
       signOut(): QueryResult;
     };
     from(table: string): import("@supabase/supabase-js").SupabaseClient["from"] extends (table: string) => infer Builder ? Builder : never;
