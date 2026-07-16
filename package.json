@@ -11,11 +11,12 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@supabase/ssr": "latest",
+    "@supabase/supabase-js": "latest",
+    "@vercel/analytics": "^2.0.1",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "@supabase/ssr": "latest",
-    "@supabase/supabase-js": "latest"
+    "react-dom": "latest"
   },
   "devDependencies": {
     "@eslint/eslintrc": "latest",
