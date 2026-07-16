@@ -7,9 +7,7 @@ declare module "@supabase/ssr" {
       verifyOtp(options: { email: string; token: string; type: "email" }): QueryResult;
       signOut(): QueryResult;
     };
-    from(table: string): {
-      select(columns?: string): { eq(column: string, value: unknown): { maybeSingle(): QueryResult<Record<string, unknown> | null> } };
-    };
+    from(table: string): import("@supabase/supabase-js").SupabaseClient["from"] extends (table: string) => infer Builder ? Builder : never;
     rpc(functionName: string, args?: Record<string, unknown>): QueryResult<boolean>;
   };
   export function createBrowserClient(url: string, key: string): SupabaseClient;

@@ -2,28 +2,48 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const source = readFileSync(new URL("../src/app/diary-app.tsx", import.meta.url), "utf8");
+const app = readFileSync(new URL("../src/app/diary-app.tsx", import.meta.url), "utf8");
+const page = readFileSync(new URL("../src/app/journal/page.tsx", import.meta.url), "utf8");
 
-test("DiaryApp wires Tali editing to mocked saving states", () => {
-  assert.match(source, /editable entry/);
-  assert.match(source, /setSaveState\(\"Saving…\"\)/);
-  assert.match(source, /setSaveState\(\"Saved\"\)/);
+test("empty journal is accepted without fictional production data", () => {
+  assert.match(app, /initialEntries = \[\]/);
+  assert.doesNotMatch(app, /initialEntries: Entry\[\] =|Fictional local sample data/);
 });
-
-test("Alex entry is read-only and opens from collapsed preview or Done", () => {
-  assert.match(source, /entry, read only/);
-  assert.match(source, /aria-expanded=\{visiblePartner\}/);
-  assert.match(source, /setAlexOpen\(true\)/);
+test("loads and normalizes both members' entries", () => {
+  assert.match(page, /entries\(id, author_user_id, body, is_done, updated_at\)/);
+  assert.match(page, /people\.get\(value\.author_user_id\)/);
 });
-
-test("navigation includes feed, calendar, look back, and contextual return", () => {
-  assert.match(source, /type DaysView = \"feed\" \| \"calendar\"/);
-  assert.match(source, /Back to \{returnContext\.label\}/);
-  assert.match(source, /Search &amp; starred/);
+test("saving always attributes an entry to the authenticated user", () => {
+  assert.match(app, /author_user_id: currentUserId/);
+  assert.match(app, /\.eq\("author_user_id", currentUserId\)/);
+  assert.doesNotMatch(app, /author_user_id: currentPerson/);
 });
-
-test("memory and blank-day scope stays intentionally narrow", () => {
-  assert.match(source, /On this day/);
-  assert.match(source, /recentBlankDays/);
-  assert.doesNotMatch(source, /reminder|analytics|streak|mood|tag|photo|AI/);
+test("partner entry remains read-only", () => {
+  assert.match(app, /entry, read only/);
+  assert.match(app, /readOnly value=\{entry\[partner\]\}/);
+});
+test("autosave waits 800ms and reports confirmed success or failure", () => {
+  assert.match(app, /setTimeout\([^;]+, 800\)/);
+  assert.match(app, /if \(result\.error\) throw result\.error/);
+  assert.match(app, /setSaveState\("Saved"\)/);
+  assert.match(app, /setSaveState\(navigator\.onLine \? "Error" : "Offline"\)/);
+});
+test("local drafts are recovered and only removed after success", () => {
+  assert.match(app, /localStorage\.getItem\(key\)/);
+  assert.match(app, /localStorage\.setItem\(draftKey, body\)/);
+  assert.match(app, /localStorage\.removeItem\(draftKey\); setSaveState\("Saved"\)/);
+});
+test("Done is persisted per user", () => {
+  assert.match(app, /update\(\{ body, is_done: isDone \}\)/);
+  assert.match(app, /insert\(\{ day_id: dayId, author_user_id: currentUserId, body, is_done: isDone \}\)/);
+});
+test("starring is shared through the days row", () => {
+  assert.match(app, /from\("days"\)\.update\(\{ starred \}\)/);
+  assert.match(app, /ignoreDuplicates: true/);
+  assert.match(app, /ensureDay\(date\)/);
+});
+test("optimistic concurrency detects conflicts and preserves local draft", () => {
+  assert.match(app, /\.eq\("updated_at", version\)/);
+  assert.match(app, /if \(!result\.data\) \{ setSaveState\("Conflict"\); return; \}/);
+  assert.match(app, /Your local text is preserved/);
 });
