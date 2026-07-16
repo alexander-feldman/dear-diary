@@ -1,12 +1,5 @@
 create type public.person_key as enum ('tali', 'alex');
 
-create table public.approved_emails (
-  email text primary key check (email = lower(email)),
-  person_key public.person_key not null unique,
-  display_name text not null,
-  created_at timestamptz not null default now()
-);
-
 create table public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
@@ -60,11 +53,6 @@ create table public.entry_revisions (
   created_by_user_id uuid not null references auth.users(id) on delete cascade
 );
 
-create function public.is_email_approved(candidate_email text)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.approved_emails ae where ae.email = lower(candidate_email));
-$$;
-
 create function public.is_journal_member(target_journal_id uuid, target_user_id uuid default auth.uid())
 returns boolean language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.journal_members jm where jm.journal_id = target_journal_id and jm.user_id = target_user_id);
@@ -80,7 +68,6 @@ returns uuid language sql stable security definer set search_path = public as $$
   select d.journal_id from public.entries e join public.days d on d.id = e.day_id where e.id = target_entry_id;
 $$;
 
-alter table public.approved_emails enable row level security;
 alter table public.profiles enable row level security;
 alter table public.journals enable row level security;
 alter table public.journal_members enable row level security;
@@ -88,7 +75,6 @@ alter table public.days enable row level security;
 alter table public.entries enable row level security;
 alter table public.entry_revisions enable row level security;
 
-create policy "approved users can read own allowlist row" on public.approved_emails for select to authenticated using (email = lower(coalesce(auth.jwt() ->> 'email', '')));
 create policy "profiles are readable by same journal members" on public.profiles for select to authenticated using (user_id = auth.uid() or exists (select 1 from public.journal_members self join public.journal_members other_member on other_member.journal_id = self.journal_id where self.user_id = auth.uid() and other_member.user_id = profiles.user_id));
 create policy "users update only own profile" on public.profiles for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
 

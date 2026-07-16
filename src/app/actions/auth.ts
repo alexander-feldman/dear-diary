@@ -10,19 +10,12 @@ export async function requestEmailCode(_state: LoginState, formData: FormData): 
   if (!email) return { message: "Enter your email address." };
 
   const supabase = await createClient();
-  const { data: allowed, error: allowlistError } = await supabase.rpc("is_email_approved", { candidate_email: email });
-
-  if (allowlistError || !allowed) {
-    return { message: "This diary is private. Use one of the approved email addresses." };
-  }
-
-  const { error } = await supabase.auth.signInWithOtp({
+  await supabase.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true },
+    options: { shouldCreateUser: false },
   });
 
-  if (error) return { message: error.message };
-  return { message: "Check your email for the one-time login code." };
+  return { message: "If this email has access, a one-time login code has been sent." };
 }
 
 export async function verifyEmailCode(_state: LoginState, formData: FormData): Promise<LoginState> {
