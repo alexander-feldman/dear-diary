@@ -3,6 +3,13 @@ import { DiaryApp, type DiaryEntry, type Person } from "../diary-app";
 import { signOut } from "../actions/auth";
 import { createClient } from "@/lib/supabase/server";
 
+type SupabaseQueryError = { code?: string; message?: string; details?: string; hint?: string };
+
+function queryErrorDetails(error: SupabaseQueryError | null) {
+  if (!error) return null;
+  return { code: error.code, message: error.message, details: error.details, hint: error.hint };
+}
+
 export default async function JournalPage() {
   const supabase = await createClient();
   const { data: userData, error: userError } = await supabase.auth.getUser();
@@ -12,7 +19,14 @@ export default async function JournalPage() {
 
   const { data: membership, error: membershipError } = await supabase.from("journal_members").select("journal_id, person_key").eq("user_id", userData.user.id).maybeSingle();
   if (membershipError || !membership) {
-    console.info("Journal configuration", { pathname: "/journal", hasUser: true, profileLookupSucceeded: null, redirectDestination: null });
+    console.error("Journal configuration", {
+      pathname: "/journal",
+      hasUser: true,
+      membershipFound: Boolean(membership),
+      membershipError: queryErrorDetails(membershipError),
+      profileLookupSucceeded: null,
+      redirectDestination: null,
+    });
     return <ConfigurationError />;
   }
 
@@ -22,7 +36,16 @@ export default async function JournalPage() {
     supabase.from("days").select("id, entry_date, starred, entries(id, author_user_id, body, is_done, updated_at)").eq("journal_id", membership.journal_id).order("entry_date", { ascending: false }),
   ]);
   const profileLookupSucceeded = !profileError && Boolean(profile);
-  console.info("Journal configuration", { pathname: "/journal", hasUser: true, profileLookupSucceeded, redirectDestination: null });
+  console.info("Journal configuration", {
+    pathname: "/journal",
+    hasUser: true,
+    membershipFound: true,
+    profileLookupSucceeded,
+    profileError: queryErrorDetails(profileError),
+    membersError: queryErrorDetails(membersError),
+    daysError: queryErrorDetails(daysError),
+    redirectDestination: null,
+  });
   if (!profileLookupSucceeded || membersError || daysError) return <ConfigurationError />;
   const people = new Map<string, Person>(((members ?? []) as Array<{ user_id: string; person_key: Person }>).map((member) => [member.user_id, member.person_key]));
   const initialEntries: DiaryEntry[] = ((days ?? []) as Array<{ id: string; entry_date: string; starred: boolean; entries: unknown[] }>).map((day) => {
