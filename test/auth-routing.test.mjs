@@ -27,6 +27,15 @@ test("missing profile and database failures render configuration error", () => {
   assert.match(journal, /Journal configuration error/);
 });
 
+test("journal configuration logs identify the failing Supabase query without user identifiers", () => {
+  assert.match(journal, /membershipFound: Boolean\(membership\)/);
+  assert.match(journal, /membershipError: queryErrorDetails\(membershipError\)/);
+  assert.match(journal, /profileError: queryErrorDetails\(profileError\)/);
+  assert.match(journal, /membersError: queryErrorDetails\(membersError\)/);
+  assert.match(journal, /daysError: queryErrorDetails\(daysError\)/);
+  assert.doesNotMatch(journal, /console\.(?:info|error)\([^\n]*userData\.user\.id/);
+});
+
 test("proxy refreshes sessions on request and response and preserves redirect cookies", () => {
   assert.match(proxy, /cookiesToSet\.forEach\(\(\{ name, value \}\) => request\.cookies\.set/);
   assert.match(proxy, /cookiesToSet\.forEach\(\(\{ name, value, options \}\) => response\.cookies\.set/);
