@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const schema = readFileSync(new URL("../supabase/migrations/202607160001_initial_schema.sql", import.meta.url), "utf8");
+const privileges = readFileSync(new URL("../supabase/migrations/202607170001_grant_authenticated_table_privileges.sql", import.meta.url), "utf8");
 const authActions = readFileSync(new URL("../src/app/actions/auth.ts", import.meta.url), "utf8");
 
 for (const table of ["profiles", "journals", "journal_members", "days", "entries", "entry_revisions"]) {
@@ -24,6 +25,15 @@ test("entry ownership policies prevent editing a partner entry", () => {
 test("policies do not use unconditional true expressions", () => {
   assert.doesNotMatch(schema, /using\s*\(\s*true\s*\)/i);
   assert.doesNotMatch(schema, /with check\s*\(\s*true\s*\)/i);
+});
+
+test("authenticated users receive the table privileges required by RLS policies", () => {
+  for (const table of ["profiles", "journals", "journal_members", "days", "entries", "entry_revisions"]) {
+    assert.match(privileges, new RegExp(`grant select on table[\\s\\S]*?public\\.${table}[\\s\\S]*?to authenticated`, "i"));
+  }
+  assert.match(privileges, /grant insert, update on table public\.days to authenticated/i);
+  assert.match(privileges, /grant insert, update on table public\.entries to authenticated/i);
+  assert.doesNotMatch(privileges, /grant\s+delete|grant\s+all/i);
 });
 
 test("normal OTP login cannot create arbitrary users or reveal membership", () => {
