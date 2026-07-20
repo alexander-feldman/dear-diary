@@ -67,3 +67,12 @@ test("late-night posts before 2 AM stay on the previous diary day", () => {
   assert.match(app, /Late-night writing for yesterday/);
   assert.match(app, /Before 2 AM, new writing is filed under/);
 });
+
+test("the Look Back tab exports the complete diary as CSV", () => {
+  assert.match(app, /date,alex,tali/);
+  assert.match(app, /value\.replaceAll\('\"', '\"\"'\)/);
+  assert.match(app, /entries\.filter\(written\)\.sort\(\(a, b\) => a\.date\.localeCompare\(b\.date\)\)/);
+  assert.match(app, /new Blob\(\["\\uFEFF", diaryCsv\(entries\)\]/);
+  assert.match(app, /link\.download = "dear-diary\.csv"/);
+  assert.match(app, />Export CSV</);
+});
