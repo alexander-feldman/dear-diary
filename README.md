@@ -1,6 +1,6 @@
 # Dear Diary
 
-Dear Diary is a private two-person journaling web app. This repository currently contains the initial production-oriented Next.js scaffold only: no authentication, database, offline sync, or final UI has been implemented yet.
+Dear Diary is a private two-person journaling web app. This repository currently contains the initial production-oriented Next.js scaffold only: no authentication, database, offline sync, or  UI has been implemented yet.
 
 ## Tech stack
 
