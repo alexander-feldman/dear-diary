@@ -79,7 +79,7 @@ export function DiaryApp({ currentPerson = "tali", currentUserId, journalId, ini
     const searchable = `${item.tali} ${item.alex} ${formatDate(item.date)}`.toLowerCase();
     return searchTerms.every((term) => searchable.includes(term));
   }) : recorded.filter((item) => item.starred);
-  const visiblePartner = currentDate < today || alexOpen || Boolean(entry[`${currentPerson}Done`]);
+  const visiblePartner = alexOpen;
   const monthDays = useMemo(() => { const [year, month] = currentDate.split("-").map(Number); const count = new Date(Date.UTC(year, month, 0)).getUTCDate(); return Array.from({ length: count }, (_, index) => `${year}-${String(month).padStart(2, "0")}-${String(index + 1).padStart(2, "0")}`); }, [currentDate]);
 
   useEffect(() => {
