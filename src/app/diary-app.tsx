@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/browser";
+import { searchExcerpt } from "@/lib/search";
 
 export type Person = "tali" | "alex";
 type View = "today" | "days" | "lookBack";
@@ -120,4 +121,8 @@ function HighlightedText({ text, terms }: { text: string; terms: string[] }) {
   const pattern = new RegExp(`(${escaped.join("|")})`, "gi");
   return <>{text.split(pattern).map((part, index) => terms.some((term) => part.toLowerCase() === term) ? <mark className="search-highlight" key={`${part}-${index}`}>{part}</mark> : part)}</>;
 }
-function Feed({ entries, openDate, toggleStar, searchTerms = [], emptyMessage = "No matching days." }: { entries: DiaryEntry[]; openDate: (date: string) => void; toggleStar: (date: string) => void | Promise<void>; searchTerms?: string[]; emptyMessage?: string }) { return <div className="feed-list">{entries.length ? entries.map((entry) => <article className="feed-item" key={entry.date} onClick={() => openDate(entry.date)}><div className="feed-item-header"><div className="feed-date"><HighlightedText text={formatDate(entry.date)} terms={searchTerms} /></div><button className={`feed-star ${entry.starred ? "is-starred" : ""}`} aria-label="Star day" onClick={(event) => { event.stopPropagation(); void toggleStar(entry.date); }}>★</button></div><div className="snippet-list"><div className="snippet-row">{label("tali")}<span className="snippet-text"><HighlightedText text={entry.tali || "—"} terms={searchTerms} /></span></div><div className="snippet-row">{label("alex")}<span className="snippet-text"><HighlightedText text={entry.alex || "—"} terms={searchTerms} /></span></div></div></article>) : <div className="empty-state">{emptyMessage}</div>}</div>; }
+function SearchSnippet({ text, terms }: { text: string; terms: string[] }) {
+  const excerpt = searchExcerpt(text, terms);
+  return <span className={`snippet-text ${excerpt ? "search-context" : ""}`}><HighlightedText text={(excerpt ?? text) || "—"} terms={terms} /></span>;
+}
+function Feed({ entries, openDate, toggleStar, searchTerms = [], emptyMessage = "No matching days." }: { entries: DiaryEntry[]; openDate: (date: string) => void; toggleStar: (date: string) => void | Promise<void>; searchTerms?: string[]; emptyMessage?: string }) { return <div className="feed-list">{entries.length ? entries.map((entry) => <article className="feed-item" key={entry.date} onClick={() => openDate(entry.date)}><div className="feed-item-header"><div className="feed-date"><HighlightedText text={formatDate(entry.date)} terms={searchTerms} /></div><button className={`feed-star ${entry.starred ? "is-starred" : ""}`} aria-label="Star day" onClick={(event) => { event.stopPropagation(); void toggleStar(entry.date); }}>★</button></div><div className="snippet-list"><div className="snippet-row">{label("tali")}<SearchSnippet text={entry.tali} terms={searchTerms} /></div><div className="snippet-row">{label("alex")}<SearchSnippet text={entry.alex} terms={searchTerms} /></div></div></article>) : <div className="empty-state">{emptyMessage}</div>}</div>; }
