@@ -1243,8 +1243,6 @@
       const entry = getEntry(currentDate);
       const today = todayKey();
       const yesterday = offsetDate(today, -1);
-      const isPast = currentDate < today;
-
       els.dateTitle.textContent = formatLong(currentDate);
       els.dateSubtitle.textContent = currentDate === today
         ? "Writing for today"
@@ -1264,7 +1262,6 @@
       const alexHasWritten = Boolean((entry.alex || "").trim());
       els.alexPreviewStatus.textContent = alexHasWritten ? "Alex wrote today" : "Alex hasn’t written yet";
 
-      if (isPast) alexExpanded = true;
       els.alexPanel.classList.toggle("collapsed", !alexExpanded);
       els.alexPreview.setAttribute("aria-expanded", String(alexExpanded));
       els.alexPreviewAction.textContent = alexExpanded ? "Hide" : (alexHasWritten ? "Read" : "Open");

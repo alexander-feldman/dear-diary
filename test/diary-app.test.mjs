@@ -6,6 +6,7 @@ import { searchExcerpt } from "../src/lib/search.ts";
 const app = readFileSync(new URL("../src/app/diary-app.tsx", import.meta.url), "utf8");
 const page = readFileSync(new URL("../src/app/journal/page.tsx", import.meta.url), "utf8");
 const loginForm = readFileSync(new URL("../src/app/auth/login-form.tsx", import.meta.url), "utf8");
+const prototype = readFileSync(new URL("../dear_diary_final_prototype.html", import.meta.url), "utf8");
 
 test("empty journal is accepted without fictional production data", () => {
   assert.match(app, /initialEntries = \[\]/);
@@ -23,6 +24,11 @@ test("saving always attributes an entry to the authenticated user", () => {
 test("partner entry remains read-only", () => {
   assert.match(app, /entry, read only/);
   assert.match(app, /readOnly value=\{entry\[partner\]\}/);
+});
+test("partner entry can be hidden after it was automatically opened", () => {
+  assert.match(app, /const visiblePartner = alexOpen;/);
+  assert.doesNotMatch(app, /const visiblePartner = currentDate < today|const visiblePartner = .*currentPerson}Done/);
+  assert.doesNotMatch(prototype, /if \(isPast\) alexExpanded = true/);
 });
 test("autosave waits 800ms and reports confirmed success or failure", () => {
   assert.match(app, /setTimeout\([^;]+, 800\)/);
