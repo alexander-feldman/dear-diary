@@ -80,6 +80,12 @@ test("late-night posts before 2 AM stay on the previous diary day", () => {
   assert.match(app, /Before 2 AM, new writing is filed under/);
 });
 
+test("the Today view navigates backward and forward without allowing future dates", () => {
+  assert.match(app, /aria-label="Previous day" onClick=\{\(\) => moveDay\(-1\)\}/);
+  assert.match(app, /aria-label="Next day" disabled=\{currentDate === today\} onClick=\{\(\) => moveDay\(1\)\}/);
+  assert.match(app, /if \(date > today\) return/);
+});
+
 test("the Look Back tab exports the complete diary as CSV", () => {
   assert.match(app, /date,alex,tali/);
   assert.match(app, /value\.replaceAll\('\"', '\"\"'\)/);
