@@ -27,7 +27,7 @@ export default async function JournalPage() {
       profileLookupSucceeded: null,
       redirectDestination: null,
     });
-    return <ConfigurationError />;
+    return membershipError ? <ConfigurationError /> : <AccountNotLinked />;
   }
 
   const [{ data: profile, error: profileError }, { data: members, error: membersError }, { data: days, error: daysError }] = await Promise.all([
@@ -46,7 +46,10 @@ export default async function JournalPage() {
     daysError: queryErrorDetails(daysError),
     redirectDestination: null,
   });
-  if (!profileLookupSucceeded || membersError || daysError) return <ConfigurationError />;
+  // A profile only supplies the optional display name. Membership is the source
+  // of truth for journal access and the current person's identity, so a missing
+  // profile must not prevent an otherwise configured member from writing.
+  if (membersError || daysError) return <ConfigurationError />;
   const people = new Map<string, Person>(((members ?? []) as Array<{ user_id: string; person_key: Person }>).map((member) => [member.user_id, member.person_key]));
   const initialEntries: DiaryEntry[] = ((days ?? []) as Array<{ id: string; entry_date: string; starred: boolean; entries: unknown[] }>).map((day) => {
     const normalized: DiaryEntry = { date: day.entry_date as string, dayId: day.id as string, starred: Boolean(day.starred), tali: "", alex: "" };
@@ -65,5 +68,9 @@ export default async function JournalPage() {
 }
 
 function ConfigurationError() {
-  return <main className="app auth-app"><section className="card auth-card"><h2>Journal configuration error</h2><p>Your session is valid, but this journal is not configured correctly. Please contact the site administrator.</p></section></main>;
+  return <main className="app auth-app"><section className="card auth-card"><h2>Couldn’t load your journal</h2><p>Your account is linked, but the journal data could not be loaded right now. Please try again, or contact the site administrator if this continues.</p><form action={signOut}><button className="done-button" type="submit">Sign out</button></form></section></main>;
+}
+
+function AccountNotLinked() {
+  return <main className="app auth-app"><section className="card auth-card"><h2>This account isn’t linked yet</h2><p>You signed in successfully, but this email has not been added to the shared journal. Ask the site administrator to link this account, or sign out and use the invited email address.</p><form action={signOut}><button className="done-button" type="submit">Sign out</button></form></section></main>;
 }

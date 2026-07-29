@@ -21,10 +21,18 @@ test("authenticated /journal renders journal data", () => {
   assert.doesNotMatch(journal, /if \(!membership\) redirect/);
 });
 
-test("missing profile and database failures render configuration error", () => {
-  assert.match(journal, /if \(!profileLookupSucceeded \|\| membersError \|\| daysError\) return <ConfigurationError/);
+test("missing optional profile does not block a configured journal member", () => {
+  assert.match(journal, /if \(membersError \|\| daysError\) return <ConfigurationError/);
+  assert.doesNotMatch(journal, /if \(!profileLookupSucceeded/);
+  assert.match(journal, /displayName=\{typeof profile\?\.display_name === "string"/);
+});
+
+test("missing membership and database failures show distinct recovery messages", () => {
   assert.match(journal, /membershipError \|\| !membership/);
-  assert.match(journal, /Journal configuration error/);
+  assert.match(journal, /membershipError \? <ConfigurationError \/> : <AccountNotLinked \/>/);
+  assert.match(journal, /This account isn’t linked yet/);
+  assert.match(journal, /Couldn’t load your journal/);
+  assert.match(journal, /<form action=\{signOut\}>/);
 });
 
 test("journal configuration logs identify the failing Supabase query without user identifiers", () => {
