@@ -60,12 +60,31 @@ test("optimistic concurrency detects conflicts and preserves local draft", () =>
   assert.match(app, /if \(!result\.data\) \{ setSaveState\("Conflict"\); return; \}/);
   assert.match(app, /Your local text is preserved/);
 });
+
 test("search excerpts show the matching sentence with its surrounding context", () => {
   const entry = "Opening thought. The day started quietly. We found a hidden garden. It felt magical. Closing thought.";
   assert.equal(searchExcerpt(entry, ["garden"]), "… The day started quietly. We found a hidden garden. It felt magical. …");
 });
+
 test("search excerpts preserve separated matches and mark omitted sections", () => {
   const entry = "Alpha match. Nearby one. Unrelated two. Unrelated three. Nearby four. Omega match.";
   assert.equal(searchExcerpt(entry, ["alpha", "omega"]), "Alpha match. Nearby one. … Nearby four. Omega match.");
   assert.equal(searchExcerpt(entry, ["missing"]), null);
+});
+
+test("late-night posts before 2 AM stay on the previous diary day", () => {
+  assert.match(app, /const diaryDayCutoffHour = 2/);
+  assert.match(app, /export const diaryDayKey = \(now = new Date\(\), cutoffHour = diaryDayCutoffHour\)/);
+  assert.match(app, /if \(date\.getHours\(\) < cutoffHour\) date\.setDate\(date\.getDate\(\) - 1\)/);
+  assert.match(app, /Late-night writing for yesterday/);
+  assert.match(app, /Before 2 AM, new writing is filed under/);
+});
+
+test("the Look Back tab exports the complete diary as CSV", () => {
+  assert.match(app, /date,alex,tali/);
+  assert.match(app, /value\.replaceAll\('\"', '\"\"'\)/);
+  assert.match(app, /entries\.filter\(written\)\.sort\(\(a, b\) => a\.date\.localeCompare\(b\.date\)\)/);
+  assert.match(app, /new Blob\(\["\\uFEFF", diaryCsv\(entries\)\]/);
+  assert.match(app, /link\.download = "dear-diary\.csv"/);
+  assert.match(app, />Export CSV</);
 });
