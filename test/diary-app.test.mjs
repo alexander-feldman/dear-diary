@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { searchExcerpt } from "../src/lib/search.ts";
 
 const app = readFileSync(new URL("../src/app/diary-app.tsx", import.meta.url), "utf8");
 const page = readFileSync(new URL("../src/app/journal/page.tsx", import.meta.url), "utf8");
@@ -58,6 +59,17 @@ test("optimistic concurrency detects conflicts and preserves local draft", () =>
   assert.match(app, /\.eq\("updated_at", version\)/);
   assert.match(app, /if \(!result\.data\) \{ setSaveState\("Conflict"\); return; \}/);
   assert.match(app, /Your local text is preserved/);
+});
+
+test("search excerpts show the matching sentence with its surrounding context", () => {
+  const entry = "Opening thought. The day started quietly. We found a hidden garden. It felt magical. Closing thought.";
+  assert.equal(searchExcerpt(entry, ["garden"]), "… The day started quietly. We found a hidden garden. It felt magical. …");
+});
+
+test("search excerpts preserve separated matches and mark omitted sections", () => {
+  const entry = "Alpha match. Nearby one. Unrelated two. Unrelated three. Nearby four. Omega match.";
+  assert.equal(searchExcerpt(entry, ["alpha", "omega"]), "Alpha match. Nearby one. … Nearby four. Omega match.");
+  assert.equal(searchExcerpt(entry, ["missing"]), null);
 });
 
 test("late-night posts before 2 AM stay on the previous diary day", () => {
